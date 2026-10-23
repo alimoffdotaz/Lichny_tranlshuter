@@ -18,6 +18,7 @@ const KEY='lichny-trablshuter-v2',today=new Date().toLocaleDateString('en-CA');c
 (()=>{
  const URL_API='https://googpcxcvczskhkoefom.supabase.co';
  const PUBLIC_KEY='sb_'+'publishable_mBsxAKg2DhLL4npShOmhfg_7VpNv1dV';
+ if(!window.supabase){const st=document.getElementById('cloudStatus');if(st)st.textContent='Не загрузился модуль облака. Обнови страницу или проверь интернет.';return}
  const client=window.supabase.createClient(URL_API,PUBLIC_KEY);
  const status=document.getElementById('cloudStatus');
  const controls=document.getElementById('cloudControls');
@@ -57,11 +58,12 @@ const KEY='lichny-trablshuter-v2',today=new Date().toLocaleDateString('en-CA');c
   const btn=document.getElementById('cloudLogin');
   if(!btn)return;
   btn.onclick=async()=>{
-   const email=document.getElementById('cloudEmail').value.trim();
-   if(!email){say('Введи электронную почту.');return}
+   try{const email=document.getElementById('cloudEmail').value.trim();
+   if(!email){say('Сначала введи электронную почту.');return}
    say('Отправляю ссылку для входа…');
    const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0]}});
-   say(error?'Ошибка входа: '+error.message:'Проверь почту и открой ссылку для входа. Если ссылка не возвращает в приложение, проверь Redirect URLs в Supabase Auth.');
+   say(error?'Ошибка входа: '+error.message:'Ссылка отправлена. Проверь почту.');
+   }catch(e){say('Не удалось выполнить вход: '+(e&&e.message?e.message:String(e)))}
   };
  }
  client.auth.onAuthStateChange((event,session)=>{
