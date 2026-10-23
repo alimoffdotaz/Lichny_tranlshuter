@@ -11,4 +11,69 @@
 <section id="history" class="hidden"><div class="card"><h2>История</h2><div id="historyList" class="muted">Пока записей нет.</div></div></section>
 </main><script>
 const KEY='lichny-trablshuter-v2',today=new Date().toLocaleDateString('en-CA');const defaults={mandatory:['10 минут тишины и наблюдения за внутренним состоянием','Опубликовать или подготовить один полезный материал без продажи услуги','Сделать один конкретный шаг для проекта','Вечером заполнить мухасабу'],optional:['Изучить источник по нравственному самовоспитанию','Записать идею для полезного контента']};let data;try{data=JSON.parse(localStorage.getItem(KEY))||{days:{},reports:{},muh:{},progress:{happy:0,paid:0}}}catch{data={days:{},reports:{},muh:{},progress:{happy:0,paid:0}}}function save(){localStorage.setItem(KEY,JSON.stringify(data))}function ensure(){if(!data.days[today])data.days[today]={mandatory:defaults.mandatory.map(text=>({text,done:false,reason:''})),optional:defaults.optional.map(text=>({text,done:false,reason:''})),notes:''}}function el(id){return document.getElementById(id)}function renderTasks(id,items,report=false){let root=el(id);root.innerHTML='';items.forEach((x,i)=>{let d=document.createElement('div');d.className='task';let c=document.createElement('input');c.type='checkbox';c.checked=!!x.done;c.onchange=()=>{x.done=c.checked;save();if(report)renderReport();else renderAll()};let label=document.createElement('label');label.textContent=x.text;d.append(c,label);root.append(d);if(report&&!x.done){let t=document.createElement('textarea');t.className='reason';t.placeholder='Причина невыполнения: '+x.text;t.value=x.reason||'';t.oninput=()=>{x.reason=t.value;save()};root.append(t)}})}function renderReport(){let d=data.days[today];renderTasks('reportTasks',[...d.mandatory,...d.optional],true)}function renderAll(){ensure();el('date').textContent=new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});renderTasks('mandatory',data.days[today].mandatory);renderTasks('optional',data.days[today].optional);el('notes').value=data.days[today].notes||'';renderReport();let m=data.muh[today]||[];['m1','m2','m3','m4'].forEach((id,i)=>el(id).value=m[i]||'');let p=data.progress;el('happy').value=p.happy||0;el('paid').value=p.paid||0;el('happyShow').textContent=(p.happy||0)+'/3';el('paidShow').textContent=(p.paid||0)+'/1';el('daysLeft').textContent=Math.max(0,Math.ceil((new Date(2026,11,1)-new Date(new Date().setHours(0,0,0,0)))/86400000));el('reportCount').textContent=Object.keys(data.reports).length;renderHistory()}function renderHistory(){let root=el('historyList');root.innerHTML='';let dates=[...new Set([...Object.keys(data.reports),...Object.keys(data.muh)])].sort().reverse();if(!dates.length){root.textContent='Пока записей нет.';return}dates.forEach(d=>{let e=document.createElement('div');e.className='entry';let h=document.createElement('strong');h.textContent=d;e.append(h);if(data.reports[d]){let p=document.createElement('p');let a=data.reports[d].items;p.textContent='Выполнено: '+a.filter(x=>x.done).length+' из '+a.length;e.append(p);a.filter(x=>!x.done).forEach(x=>{let q=document.createElement('p');q.textContent='Не выполнено: '+x.text+' — '+(x.reason||'причина не указана');e.append(q)})}if(data.muh[d])data.muh[d].forEach((v,i)=>{if(v){let p=document.createElement('p');p.textContent=['1. Проявление нафса: ','2. Где поступил правильно: ','3. Что сделал для проекта: ','4. Что исправить завтра: '][i]+v;e.append(p)}});root.append(e)})}document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('main section').forEach(s=>s.classList.toggle('hidden',s.id!==b.dataset.tab));renderAll()});el('savePlan').onclick=()=>{data.days[today].notes=el('notes').value;save();alert('План сохранён.')};el('saveReport').onclick=()=>{let items=[...data.days[today].mandatory,...data.days[today].optional],miss=items.filter(x=>!x.done&&!x.reason.trim());if(miss.length){el('reportStatus').textContent='Заполни причину для каждого невыполненного пункта ('+miss.length+').';return}data.reports[today]={items:items.map(x=>({...x})),savedAt:new Date().toISOString()};save();el('reportStatus').textContent='Отчёт сохранён.';renderAll()};el('saveMuh').onclick=()=>{data.muh[today]=['m1','m2','m3','m4'].map(id=>el(id).value.trim());save();el('muhStatus').textContent='Мухасаба сохранена.';renderAll()};el('saveProgress').onclick=()=>{let happy=Number(el('happy').value),paid=Number(el('paid').value);if(!Number.isInteger(happy)||happy<0||!Number.isInteger(paid)||paid<0){alert('Введи целые неотрицательные числа.');return}data.progress={happy,paid};save();renderAll();alert('Прогресс сохранён.')};el('export').onclick=()=>{let a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.href=u;a.download='lichny-trablshuter-backup-'+today+'.json';a.click();URL.revokeObjectURL(u)};el('importBtn').onclick=()=>el('importFile').click();el('importFile').onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text());if(!x.days||!x.progress)throw Error();if(confirm('Заменить текущие данные резервной копией?')){data=x;save();renderAll();alert('Импорт завершён.')}}catch{alert('Не удалось прочитать резервную копию.')}};function field(id,label,placeholder){let d=document.createElement('div');d.className='field';let l=document.createElement('label');l.htmlFor=id;l.textContent=label;let t=document.createElement('textarea');t.id=id;t.placeholder=placeholder;d.append(l,t);el('questions').append(d)}field('m1','1. Самое сильное проявление нафса','Что произошло?');field('m2','2. Момент, когда поступил правильно','Какое действие?');field('m3','3. Что сделал для проекта','Конкретный результат');field('m4','4. Что хочу исправить завтра','Одно конкретное изменение');ensure();renderAll();if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
-</script></body></html>
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=>{
+ const URL_API='https://googpcxcvczskhkoefom.supabase.co';
+ const PUBLIC_KEY='sb_'+'publishable_mBsxAKg2DhLL4npShOmhfg_7VpNv1dV';
+ const client=window.supabase.createClient(URL_API,PUBLIC_KEY);
+ const status=document.getElementById('cloudStatus');
+ const controls=document.getElementById('cloudControls');
+ let activeUser=null,ready=false,timer=null;
+ function say(t){status.textContent=t}
+ function showLoggedIn(user){
+  controls.innerHTML='';
+  const label=document.createElement('span');label.style.flex='1';label.style.overflowWrap='anywhere';label.textContent=user.email||'Вход выполнен';
+  const btn=document.createElement('button');btn.textContent='Выйти';btn.onclick=()=>client.auth.signOut();
+  controls.append(label,btn);
+ }
+ async function syncUser(user){
+  activeUser=user;ready=false;showLoggedIn(user);say('Загружаю облачные данные…');
+  const {data:row,error}=await client.from('user_data').select('data').eq('user_id',user.id).maybeSingle();
+  if(error){say('Ошибка доступа к облаку: '+error.message);return}
+  if(row&&row.data){
+   data=row.data;localStorage.setItem(KEY,JSON.stringify(data));ensure();renderAll();say('Данные загружены из облака ✓');
+  }else{
+   const {error:e}=await client.from('user_data').upsert({user_id:user.id,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+   if(e){say('Не удалось перенести текущие данные: '+e.message);return}
+   say('Текущие данные перенесены в облако ✓');
+  }
+  ready=true;
+ }
+ const originalSave=save;
+ save=function(){
+  originalSave();
+  if(ready&&activeUser){
+   clearTimeout(timer);timer=setTimeout(async()=>{
+    say('Синхронизирую…');
+    const {error}=await client.from('user_data').upsert({user_id:activeUser.id,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    say(error?'Ошибка синхронизации: '+error.message:'Сохранено на устройстве и в облаке ✓');
+   },600);
+  }
+ };
+ function wireLogin(){
+  const btn=document.getElementById('cloudLogin');
+  if(!btn)return;
+  btn.onclick=async()=>{
+   const email=document.getElementById('cloudEmail').value.trim();
+   if(!email){say('Введи электронную почту.');return}
+   say('Отправляю ссылку для входа…');
+   const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0]}});
+   say(error?'Ошибка входа: '+error.message:'Проверь почту и открой ссылку для входа. Если ссылка не возвращает в приложение, проверь Redirect URLs в Supabase Auth.');
+  };
+ }
+ client.auth.onAuthStateChange((event,session)=>{
+  if(session&&session.user){setTimeout(()=>syncUser(session.user),0)}
+  else{
+   activeUser=null;ready=false;
+   controls.innerHTML='<input id="cloudEmail" type="email" placeholder="Электронная почта"><button class="primary" id="cloudLogin">Войти</button>';
+   wireLogin();
+   if(event==='SIGNED_OUT')say('Выход выполнен. Локальные данные сохранены.');
+  }
+ });
+ wireLogin();
+ client.auth.getSession().then(({data:{session}})=>{if(session&&session.user)syncUser(session.user)});
+})();
+</script>
+</body></html>
