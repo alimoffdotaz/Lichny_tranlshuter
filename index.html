@@ -26,16 +26,20 @@ const KEY='lichny-trablshuter-v2',today=new Date().toLocaleDateString('en-CA');c
  function say(t){status.textContent=t}
  function showLoggedIn(user){
   controls.innerHTML='';
-  const label=document.createElement('span');label.style.display='block';label.style.overflowWrap='anywhere';label.textContent=user.email||'Вход выполнен';
+  controls.style.flexDirection='row';controls.style.alignItems='center';controls.style.flexWrap='wrap';
+  const label=document.createElement('span');label.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px';label.textContent=user.email||'Вход выполнен';
+  const menuBtn=document.createElement('button');menuBtn.type='button';menuBtn.textContent='Аккаунт ▾';menuBtn.style.cssText='padding:7px 10px;font-size:13px;white-space:nowrap';
+  const actions=document.createElement('div');actions.style.cssText='display:none;width:100%;gap:8px;flex-direction:column';
   const changeBtn=document.createElement('button');changeBtn.textContent='Изменить пароль';changeBtn.type='button';
   const form=document.createElement('div');form.style.cssText='display:none;width:100%;gap:8px;flex-direction:column';
   const pass=document.createElement('input');pass.id='cloudNewPassword';pass.type='password';pass.autocomplete='new-password';pass.placeholder='Новый пароль (не менее 6 символов)';pass.style.cssText='display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid #cbd6ce;border-radius:9px;background:#fff;color:#1d2924;font:inherit';
   const setBtn=document.createElement('button');setBtn.className='primary';setBtn.textContent='Сохранить новый пароль';setBtn.type='button';
+  menuBtn.onclick=()=>{const open=actions.style.display==='none';actions.style.display=open?'flex':'none';menuBtn.textContent=open?'Аккаунт ▴':'Аккаунт ▾';};
   changeBtn.onclick=()=>{form.style.display=form.style.display==='none'?'flex':'none';changeBtn.textContent=form.style.display==='none'?'Изменить пароль':'Отмена';};
   setBtn.onclick=async()=>{const password=pass.value;if(password.length<6){say('Пароль должен содержать не менее 6 символов.');return}setBtn.disabled=true;say('Сохраняю пароль…');const {error}=await client.auth.updateUser({password});setBtn.disabled=false;if(error){say('Не удалось изменить пароль: '+error.message)}else{pass.value='';form.style.display='none';changeBtn.textContent='Изменить пароль';say('Пароль сохранён. Входи по почте и паролю — без писем.')}};
   form.append(pass,setBtn);
   const btn=document.createElement('button');btn.textContent='Выйти';btn.type='button';btn.onclick=()=>client.auth.signOut();
-  controls.append(label,changeBtn,form,btn);
+  actions.append(changeBtn,form,btn);controls.append(label,menuBtn,actions);
  } async function syncUser(user){
   activeUser=user;ready=false;showLoggedIn(user);say('Загружаю облачные данные…');
   const {data:row,error}=await client.from('user_data').select('data').eq('user_id',user.id).maybeSingle();
