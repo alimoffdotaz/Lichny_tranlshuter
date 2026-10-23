@@ -68,11 +68,11 @@ const KEY='lichny-trablshuter-v2',today=new Date().toLocaleDateString('en-CA');c
  }
  client.auth.onAuthStateChange((event,session)=>{
   if(session&&session.user){setTimeout(()=>syncUser(session.user),0)}
-  else{
+  else if(event==='SIGNED_OUT'){
    activeUser=null;ready=false;
-   controls.innerHTML='<input id="cloudEmail" type="email" placeholder="Электронная почта"><button class="primary" id="cloudLogin">Войти</button>';
+   controls.innerHTML='<input id="cloudEmail" type="email" placeholder="Электронная почта" autocomplete="email"><button class="primary" id="cloudLogin">Получить ссылку</button>';
    wireLogin();
-   if(event==='SIGNED_OUT')say('Выход выполнен. Локальные данные сохранены.');
+   say('Выход выполнен. Локальные данные сохранены.');
   }
  });
  wireLogin();
